@@ -72,7 +72,7 @@ void setup() {
   // SerialBT.enableSSP(); // doesn't seem to change anything
 
 
-  Serial.println("Starting discoverAsync...");
+  printBoth(true,"Starting discoverAsync...");
   BTScanResults* btDeviceList = SerialBT.getScanResults();  // maybe accessing from different threads!
   if (SerialBT.discoverAsync([](BTAdvertisedDevice* pDevice) {
       // BTAdvertisedDeviceSet*set = reinterpret_cast<BTAdvertisedDeviceSet*>(pDevice);
@@ -81,21 +81,21 @@ void setup() {
     } )
     ) {
     delay(BT_DISCOVER_TIME);
-    Serial.print("Stopping discoverAsync... ");
+    printBoth(false,"Stopping discoverAsync... ");
     SerialBT.discoverAsyncStop();
-    Serial.println("discoverAsync stopped");
+    printBoth(true,"discoverAsync stopped");
     delay(5000);
     if(btDeviceList->getCount() > 0) {
       BTAddress addr;
       int channel=0;
-      Serial.println("Found devices:");
+      printBoth(true,"Found devices:");
       for (int i=0; i < btDeviceList->getCount(); i++) {
         BTAdvertisedDevice *device=btDeviceList->getDevice(i);
-        Serial.printf(" ----- %s  %s %d\n", device->getAddress().toString().c_str(), device->getName().c_str(), device->getRSSI());
+        printBoth(false," - %s %s %d\n", device->getAddress().toString().c_str(), device->getName().c_str(), device->getRSSI());
         std::map<int,std::string> channels=SerialBT.getChannels(device->getAddress());
-        Serial.printf("scanned for services, found %d\n", channels.size());
+        printBoth(false,"scanned for services, found %d\n", channels.size());
         for(auto const &entry : channels) {
-          Serial.printf("     channel %d (%s)\n", entry.first, entry.second.c_str());
+          Serial.printf(" channel %d (%s)\n", entry.first, entry.second.c_str());
         }
         if(channels.size() > 0) {
           addr = device->getAddress();
@@ -103,39 +103,39 @@ void setup() {
         }
       }
       if(addr) {
-        Serial.printf("connecting to %s - %d\n", addr.toString().c_str(), channel);
+        printBoth(false,"connecting to %s - %d\n", addr.toString().c_str(), channel);
         SerialBT.connect(addr, channel, sec_mask, role);
       }
     } else {
-      Serial.println("Didn't find any devices");
+      printBoth(true,"Didn't find any devices");
     }
   } else {
-    Serial.println("Error on discoverAsync f.e. not workin after a \"connect\"");
+    printBoth(true,"Error on discoverAsync f.e. not workin after a \"connect\"");
   }
 }
 
 
-String sendData="Hi from esp32!\n";
+String sendData="+";
 
 void loop() {
   if(! SerialBT.isClosed() && SerialBT.connected()) {
     if( SerialBT.write((const uint8_t*) sendData.c_str(),sendData.length()) != sendData.length()) {
-      Serial.println("tx: error");
+      printBoth(true,"tx: error");
     } else {
-      Serial.printf("tx: %s",sendData.c_str());
+      printBoth(false,"tx: %s",sendData.c_str());
     }
     if(SerialBT.available()) {
-      Serial.print("rx: ");
+      printBoth(false,"rx: ");
       while(SerialBT.available()) {
         int c=SerialBT.read();
         if(c >= 0) {
-          Serial.print((char) c);
+          printBoth(false,"%c",(char) c);
         }
       }
-      Serial.println();
+      printBoth(true,"");
     }
   } else {
-    Serial.println("not connected");
+    printBoth(true,"not connected");
   }
   delay(1000);
 }
